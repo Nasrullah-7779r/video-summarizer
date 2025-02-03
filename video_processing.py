@@ -4,11 +4,14 @@ from urllib.parse import urlparse, parse_qs
 from youtube_transcript_api import YouTubeTranscriptApi
 from dotenv import load_dotenv
 
+from appInsight import record_message
+
 load_dotenv()
 
 def get_video_id(video_url: str) -> str:
     """Extract video ID from various YouTube URL formats"""
     parsed = urlparse(video_url)
+    record_message('on parsed')
     if parsed.hostname == 'youtu.be':
         return parsed.path[1:]
     if parsed.hostname in ('www.youtube.com', 'youtube.com'):
@@ -22,10 +25,12 @@ def get_transcript(video_url: str) -> str:
     """Fetch and process YouTube transcript"""
     try:
         video_id = get_video_id(video_url)
+        record_message('got video_id')
         if not video_id:
             return "Error: Invalid YouTube URL"
             
         transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        record_message('got transcript')
         return " ".join([item['text'] for item in transcript])
         
     except Exception as e:
@@ -35,7 +40,7 @@ def summarize_video(transcript: str) -> str:
     """Generate summary using Hugging Face model"""
     HF_TOKEN = os.environ["HF_TOKEN"]
     API_URL = "https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1"
-    
+    record_message('in summarizer')
     prompt = f"""<s>[INST] You are an assistant summarizing video transcripts. 
 Summarize the following transcript in 1-3 concise paragraphs. 
 Focus on key points, main arguments, and important details. 
@@ -50,6 +55,8 @@ Transcript: {transcript} [/INST]</s>"""
             "return_full_text": False  
         }
     }
+    
+    record_message('after payload')
 
     try:
         response = requests.post(
@@ -57,7 +64,7 @@ Transcript: {transcript} [/INST]</s>"""
             headers={"Authorization": f"Bearer {HF_TOKEN}"},
             json=payload
         )
-        
+        record_message('in response')
         if response.status_code == 200:
             return response.json()[0]['generated_text']
         return None
