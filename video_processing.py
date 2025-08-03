@@ -1,7 +1,9 @@
 import os
 import requests
 from urllib.parse import urlparse, parse_qs
-from youtube_transcript_api import YouTubeTranscriptApi
+import socket
+socket.setdefaulttimeout(15) 
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,25 +21,35 @@ def get_video_id(video_url: str) -> str:
             return parsed.path.split('/')[2]
     return video_url.split('v=')[-1].split('&')[0]
 
-def get_transcript(video_url: str) -> str:
-    """Fetch and process YouTube transcript"""
+
+def safe_transcript(video_id: str):
     try:
-        video_id = get_video_id(video_url)
-
-        if not video_id:
-            return "Error: Invalid YouTube URL"
-
-        proxies  = {
-        'http': "socks5://host.docker.internal:9050",
-        'https': "socks5://host.docker.internal:9050",
-        }
-
-        transcript = YouTubeTranscriptApi.get_transcript(video_id, proxies=proxies)
-
-        return " ".join([item['text'] for item in transcript])
-
+        transcripts = YouTubeTranscriptApi.list_transcripts(video_id)
+        t = transcripts.find_generated_transcript(['en'])   # pick auto-EN if present
+        return " ".join(seg['text'] for seg in t.fetch())
+    except TranscriptsDisabled:
+        return None
     except Exception as e:
-        return f"Error: {str(e)}"
+        print("Other YT error:", e)
+        return None
+
+
+def get_transcript(video_url: str) -> str:
+
+    video_id = get_video_id(video_url)
+    if not video_id:
+        return "Error: Invalid YouTube URL"
+    
+    transcript_text = safe_transcript(video_id)
+    if transcript_text is None:
+        return "Error: No transcript available or subtitles are disabled."
+    return transcript_text
+
+#    try:
+#        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+#        return " ".join(item["text"] for item in transcript)
+#    except Exception as e:
+#        return f"Error: {e}"
 
 def summarize_video(transcript: str) -> str:
     """Generate summary using Hugging Face model"""
