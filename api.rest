@@ -1,0 +1,27 @@
+### summary
+POST http://127.0.0.1:8000/summary
+Content-Type: application/json
+
+{
+    
+"video_url":"https://www.youtube.com/watch?v=kDEX1HXybrU&ab_channel=PowerCertAnimatedVideos"
+}
+
+### summary 
+# POST http://212.85.25.168:8080/summary
+POST http://127.0.0.1:8000/summary
+Content-Type: application/json
+
+# {
+    
+#  "video_url":"https://www.youtube.com/watch?v=R-JUOpCgTZc&ab_channel=PowerCertAnimatedVideos"
+
+# }
+
+{
+    "video_url":"https://www.youtube.com/watch?v=aTEhpOP-Zb8&ab_channel=CuriosaFelicitas"
+}
+
+# {
+#     "video_url":"https://www.youtube.com/watch?v=i4b_ETwPoTE&ab_channel=HiteshChoudhary"
+# }
